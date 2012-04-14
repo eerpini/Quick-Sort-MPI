@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#include "header.h"
-
 
 int validate (int *output, int num_elements)
 {
