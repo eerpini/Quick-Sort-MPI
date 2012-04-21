@@ -1,3 +1,3 @@
 make; make clean all
-./generate 8192
-mpirun -n 2 -machinefile mfile run
+./generate 8388608
+mpirun -n 8 -machinefile mfile run

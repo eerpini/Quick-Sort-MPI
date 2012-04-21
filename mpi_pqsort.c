@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <mpi.h>
+#include <time.h>
 
 
 int validate (int *output, int num_elements)
@@ -23,9 +24,8 @@ int validate (int *output, int num_elements)
 
 int main (int argc, char **argv)
 {
-	FILE *fin = NULL;
 	int *input = NULL;
-	int *output = NULL;
+	//int *output = NULL;
 	int num_elements;
         int  i = 0;
         int numtasks, rank, rc;
@@ -91,7 +91,7 @@ int main (int argc, char **argv)
                         }
                         else{
                                 MPI_Send((input + part_start), elems_per_task, MPI_INT, i, 0, MPI_COMM_WORLD);
-                                part_start += (elems_per_task + 1);
+                                part_start += (elems_per_task);
                         }
                 }
 

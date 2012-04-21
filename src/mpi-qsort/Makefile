@@ -10,4 +10,4 @@ validate: validate.c
 	gcc -o validate validate.c
 
 clean:
-	rm generate run validate
+	rm -f generate run validate
