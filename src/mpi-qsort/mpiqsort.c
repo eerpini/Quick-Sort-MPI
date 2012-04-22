@@ -1,5 +1,56 @@
 #include "header.h"
 
+typedef int elem_type ;
+
+#define ELEM_SWAP(a,b) { register elem_type t=(a);(a)=(b);(b)=t; }
+
+
+/*---------------------------------------------------------------------------
+   Function :   kth_smallest()
+   In       :   array of elements, # of elements in the array, rank k
+   Out      :   one element
+   Job      :   find the kth smallest element in the array
+   Notice   :   use the median() macro defined below to get the median. 
+
+                Reference:
+
+                  Author: Wirth, Niklaus 
+                   Title: Algorithms + data structures = programs 
+               Publisher: Englewood Cliffs: Prentice-Hall, 1976 
+    Physical description: 366 p. 
+                  Series: Prentice-Hall Series in Automatic Computation 
+
+ ---------------------------------------------------------------------------*/
+
+
+elem_type kth_smallest(elem_type a[], int n, int k)
+{
+    register i,j,l,m ;
+    register elem_type x ;
+
+    l=0 ; m=n-1 ;
+    while (l<m) {
+        x=a[k] ;
+        i=l ;
+        j=m ;
+        do {
+            while (a[i]<x) i++ ;
+            while (x<a[j]) j-- ;
+            if (i<=j) {
+                ELEM_SWAP(a[i],a[j]) ;
+                i++ ; j-- ;
+            }
+        } while (i<=j) ;
+        if (j<k) l=i ;
+        if (k<i) m=j ;
+    }
+    return a[k] ;
+}
+
+
+#define median(a,n) kth_smallest(a,n,(((n)&1)?((n)/2):(((n)/2)-1)))
+
+
 int compare (const void *a, const void *b)
 {
 	return (*(int *) a - *(int *) b);
@@ -15,13 +66,24 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         int recvdSize;
         int i, j;
         int origSize = *dataLengthPtr;
-        int splitRanks[commSize/2];
+        int localMedian;
+
+        int tempMedians[commSize];
+        int _incr = 1;
         if(*dataLengthPtr <= 0){
                 fprintf(stderr, "We got 0 elements, this should not happen\n");
                 return NULL;
         }
+        localMedian = median(input, *dataLengthPtr);
+        tempMedians[commRank] = localMedian;
+
+        MPI_Gather(&localMedian, 1, MPI_INT, tempMedians, commSize, MPI_INT, 0, comm);
+        printf("[%d] Done with Gather\n", commRank);
+
         if(commRank == 0){
+                //pivot = median(tempMedians, commSize); 
                 pivot = input[0];
+                printf("Got the pivot in root : [%d]\n", pivot);
         }
         printf("Sending the pivot to everyone\n");
         MPI_Bcast(&pivot, 1, MPI_INT, 0, comm);
@@ -35,11 +97,26 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         }
 
         i=0;
+        if(pivot > input[(*dataLengthPtr)/2]){
+                _incr = 1;
+                i = (*dataLengthPtr)/2 -1 ;
+        }
+        else{
+                _incr = -1;
+                i = (*dataLengthPtr)/2;
+        }
         do{
-                if(input[i] > pivot)
-                        break;
-                i++;
-        }while(i < *dataLengthPtr);
+                if(_incr == 1){
+                        if(input[i] > pivot)
+                                break;
+                        i++;
+                }
+                if(_incr == -1){
+                        if(input[i] <= pivot)
+                                break;
+                        i--;
+                }
+        }while(i < *dataLengthPtr && i >= 0);
 
         if(i == *dataLengthPtr){
                 fprintf(stderr, "We could not locate the pivot in the sorted array, this should not happen\n");
