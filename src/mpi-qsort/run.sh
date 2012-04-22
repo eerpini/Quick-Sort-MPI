@@ -10,5 +10,6 @@ else
         machine_file="mfile"
 fi
 make clean && make
+sync
 sleep 2
 mpirun -n $1 -machinefile $machine_file ./run $2

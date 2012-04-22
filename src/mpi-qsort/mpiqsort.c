@@ -59,31 +59,32 @@ int compare (const void *a, const void *b)
 /*
  * Binary Search : array, start_index, num_elements, pivot
  */
-int binarySearch( int * a, int start, int nelems, int pivot){
-
-        if(nelems == 1)
-                return start;
-        if(a[start + nelems/2-1] == pivot){
-                /*
-                 * FIXME : This is dangerous
-                 */
-                while(1){
-                        start++;
-                        printf("I\n");
-                        if(a[start + nelems/2-1] != pivot){
-                                return start+nelems/2;
-                        }
+int binarySearch( int * input, int start, int stop, int pivot){
+        int j;
+        int nelems = stop;
+         do{
+                if(start  == stop-1){
+                       return start; 
                 }
-        }
-
-        if(a[start + nelems/2-1] > pivot){
-                return binarySearch(a, start, nelems/2-1, pivot);
-        }
-        if(a[start + nelems/2-1] < pivot){
-                return binarySearch(a, start+nelems/2, nelems/2-1, pivot);
-        }
-
-
+                if(input[(start+stop)/2] > pivot){
+                        stop = start+stop/2;
+                }
+                if(input[(start+stop)/2] < pivot){
+                        start = (start+stop)/2+1;
+                }
+                if(input[(start+stop)/2] == pivot){
+                        j=(start+stop)/2 + 1;
+                        do{
+                                if(input[j] != pivot){
+                                        return j; 
+                                }
+                                j++;
+                                printf("InnerWhile\n");
+                        }while(j<nelems);
+                        return j;
+                }
+                printf("OuterWhile start = %d stop = %d\n", start, stop);
+        }while(1);
 }
 
 int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank, int commSize, int *recvBuf, int *mergeBuf) {
@@ -148,6 +149,12 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         }while(i < *dataLengthPtr );
         gettimeofday(&sptime, 0x0);
         printf("The time taken for serial lookup : %lld\n",timeval_diff(NULL, &sptime, &sttime)); 
+        printf("i is : %d\n", i);
+        gettimeofday(&sttime, 0x0);
+        j = binarySearch(input, 0, *dataLengthPtr, pivot);
+        printf("COMPARISON : j [%d] i [%d]\n", j, i);
+        gettimeofday(&sptime, 0x0);
+        printf("The time taken for binary : %lld\n",timeval_diff(NULL, &sptime, &sttime)); 
       
         /*
         j = binarySearch(input, 0, *dataLengthPtr-1, pivot);

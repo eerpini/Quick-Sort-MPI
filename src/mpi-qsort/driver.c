@@ -13,7 +13,7 @@ void validate(int* output, int globalNumElements) {
   printf("============= SORTED ===========\n");
 }
 
-long long timeval_diff(struct timeval *difference,
+long long int timeval_diff(struct timeval *difference,
              struct timeval *end_time,
              struct timeval *start_time) {
   struct timeval temp_diff;
