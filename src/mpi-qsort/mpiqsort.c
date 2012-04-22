@@ -64,26 +64,36 @@ int binarySearch( int * input, int start, int stop, int pivot){
         int nelems = stop;
          do{
                 if(start  == stop-1){
+#ifdef BSEARCH_DEBUG
+                       printf("1 Returnig %d and pivot is %d and element is %d element -1 is %d\n", start, pivot, input[start], input[start-1]);
+#endif
+                       if(input[start] <= pivot){
+                               return start+1;
+                       }
                        return start; 
                 }
                 if(input[(start+stop)/2] > pivot){
-                        stop = start+stop/2;
+                        stop = (start+stop)/2;
+                        //printf("OuterWhile start = %d stop = %d\n", start, stop);
+                        continue;
                 }
                 if(input[(start+stop)/2] < pivot){
                         start = (start+stop)/2+1;
+                        //printf("OuterWhile start = %d stop = %d\n", start, stop);
+                        continue;
                 }
                 if(input[(start+stop)/2] == pivot){
-                        j=(start+stop)/2 + 1;
+                        j=(start+stop)/2; 
                         do{
-                                if(input[j] != pivot){
-                                        return j; 
-                                }
                                 j++;
-                                printf("InnerWhile\n");
-                        }while(j<nelems);
+                                //printf("InnerWhile\n");
+                        }while(input[j] == pivot && j<nelems);
+#ifdef BSEARCH_DEBUG
+                        printf("Returnig %d and pivot is %d and element is %d\n", j, pivot, input[j]);
+#endif
                         return j;
                 }
-                printf("OuterWhile start = %d stop = %d\n", start, stop);
+                //printf("OuterWhile start = %d stop = %d\n", start, stop);
         }while(1);
 }
 
@@ -137,6 +147,7 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                 return input;
         }
 
+#ifdef BSEARCH_DEBUG
         i=0;
 
         gettimeofday(&sttime, 0x0);
@@ -155,6 +166,16 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         printf("COMPARISON : j [%d] i [%d]\n", j, i);
         gettimeofday(&sptime, 0x0);
         printf("The time taken for binary : %lld\n",timeval_diff(NULL, &sptime, &sttime)); 
+        i=j;
+#endif
+#ifdef DEBUG
+        gettimeofday(&sttime, 0x0);
+#endif
+        i = binarySearch(input, 0, *dataLengthPtr, pivot);
+#ifdef DEBUG
+        gettimeofday(&sptime, 0x0);
+        printf("The time taken for binary : %lld\n",timeval_diff(NULL, &sptime, &sttime)); 
+#endif
       
         /*
         j = binarySearch(input, 0, *dataLengthPtr-1, pivot);
@@ -350,7 +371,9 @@ int* mpiqsort(int* input, int globalNumElements, int* dataLengthPtr, MPI_Comm co
                         exit(0);
         }
 
+#ifdef DEBUG
         printf("Calling recursive function here\n");
+#endif
         return mpiqsort_recur(input , dataLengthPtr, comm, commRank, commSize, recvBuf, mergeBuf);
 
 }

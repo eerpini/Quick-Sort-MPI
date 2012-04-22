@@ -41,11 +41,13 @@ int binarySearch( int * input, int start, int stop, int pivot){
                        return start; 
                 }
                 if(input[(start+stop)/2] > pivot){
-                        stop = start+stop/2;
+                        stop = (start+stop)/2;
+                        //printf("OuterWhile start = %d stop = %d\n", start, stop);
                         continue;
                 }
                 if(input[(start+stop)/2] < pivot){
                         start = (start+stop)/2+1;
+                        //printf("OuterWhile start = %d stop = %d\n", start, stop);
                         continue;
                 }
                 if(input[(start+stop)/2] == pivot){
@@ -55,11 +57,11 @@ int binarySearch( int * input, int start, int stop, int pivot){
                                         return j; 
                                 }
                                 j++;
-                                printf("InnerWhile\n");
+                                //printf("InnerWhile\n");
                         }while(j<nelems);
                         return j;
                 }
-                printf("OuterWhile start = %d stop = %d\n", start, stop);
+                //printf("OuterWhile start = %d stop = %d\n", start, stop);
         }while(1);
 }
 
@@ -81,6 +83,7 @@ int main(){
         //pivot = median(input, 8192);
         pivot = input[0];
         qsort((void *)(input), (size_t)(val), (size_t)(sizeof(int)), compare);
+        printf("Quick sort done\n");
         i=0;
 
         do{
@@ -89,6 +92,7 @@ int main(){
                 }
                 i++;
         }while(i < val);
+        printf("Linear Search done\n");
         j = binarySearch(input, 0 , val, pivot);
         printf(" pivot %d i [%d] j [%d]\n", pivot, i, j);
         printf(" input[i-1] %d input[i] %d input[i+1] %d input[j-1] %d input[j] %d input[j+1] %d \n", 
@@ -98,11 +102,9 @@ int main(){
                         input[j-1],
                         input[j],
                         input[j+1]);
-
-
-
-
-
+        if(i!=j)
+                return EXIT_FAILURE;
+        return EXIT_SUCCESS;
 
 }
 
