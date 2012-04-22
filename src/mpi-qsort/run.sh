@@ -9,9 +9,9 @@ if [ $(hostname) == "localhost.localdomain" ]; then
 else
         machine_file="mfile"
 fi
-make clean && make
+#make clean && make
 if [ $# -eq 3 ]; then
-        mpirun -n $1 -machinefile $machine_file ./run $2 $3
+        mpirun -n $1 -machinefile $machine_file ./run $((2**$2)) $3
 else
-        mpirun -n $1 -machinefile $machine_file ./run $2
+        mpirun -n $1 -machinefile $machine_file ./run $((2**$2))
 fi

@@ -101,7 +101,7 @@ int binarySearch( int * input, int st, int sp, int p){
 }
 
 int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank, int commSize, int *recvBuf, int *mergeBuf) {
-        int pivot;
+        register int pivot;
         /*
          * Rank of the person I have to send to or receive from
          */
@@ -201,26 +201,10 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                         /*
                          * We need to merge here, we have the second half and the received second half in recvBuf
                          */
-                        register int size = *dataLengthPtr;
                         register int tsize = i;
-                        //dataTransferSize = i;
                         i = 0;
                         j=0;
-                        while(1){
-                                if(i>= size)
-                                        break;
-                                if(j>= recvdSize){
-                                        mergeBuf[i] = input[tsize];
-                                        tsize++;
-                                        i++;
-                                        continue;
-                                }
-                                if(tsize>= origSize){
-                                        mergeBuf[i] = recvBuf[j];
-                                        j++;
-                                        i++;
-                                        continue;
-                                }
+                        while(j<recvdSize && tsize < origSize){
                                 if(input[tsize] <= recvBuf[j]){
                                         mergeBuf[i] = input[tsize];
                                         tsize++;
@@ -234,16 +218,22 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                                         continue;
                                 }
                         }
-
-                                
-
+                        while(j<recvdSize){
+                                mergeBuf[i] = recvBuf[j];
+                                i++;
+                                j++;
+                        }
+                        while(tsize<origSize){
+                                mergeBuf[i] = input[tsize];
+                                i++;
+                                tsize++;
+                        }
                 }
                 else{
                         /*
                          * We should be sending first the second half
                          */
                         dataTransferSize = *dataLengthPtr - i;
-                        //*dataLengthPtr = i;
                         dataEndPoint = (commRank + commSize/2)%commSize;
 #ifdef DEBUG
                         printf("Sending the size[%d] to endpoint[%d]\n", dataTransferSize, dataEndPoint);
@@ -269,36 +259,32 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                          * We need to merge here, we have the first half and the received first half in recvBuf
                          */
                         origSize = i;
-                        //dataTransferSize = 0;
-                        register int size = *dataLengthPtr;
                         register int tsize = 0;
                         i = 0;
                         j=0;
-                        while(1){
-                                if(i>= size)
-                                        break;
-                                if(j>= recvdSize){
-                                        mergeBuf[i] = input[tsize];
-                                        tsize++;
-                                        i++;
-                                        continue;
-                                }
-                                if(tsize>= origSize){
-                                        mergeBuf[i] = recvBuf[j];
-                                        j++;
-                                        i++;
-                                        continue;
-                                }
+                        while(j<recvdSize && tsize < origSize){
                                 if(input[tsize] <= recvBuf[j]){
                                         mergeBuf[i] = input[tsize];
                                         tsize++;
+                                        i++;
+                                        continue;
                                 }
                                 else{
                                         mergeBuf[i] = recvBuf[j];
+                                        i++;
                                         j++;
+                                        continue;
                                 }
-
+                        }
+                        while(j<recvdSize){
+                                mergeBuf[i] = recvBuf[j];
                                 i++;
+                                j++;
+                        }
+                        while(tsize<origSize){
+                                mergeBuf[i] = input[tsize];
+                                i++;
+                                tsize++;
                         }
                 }
 
