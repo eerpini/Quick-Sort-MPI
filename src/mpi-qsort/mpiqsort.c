@@ -59,9 +59,12 @@ int compare (const void *a, const void *b)
 /*
  * Binary Search : array, start_index, num_elements, pivot
  */
-int binarySearch( int * input, int start, int stop, int pivot){
-        int j;
-        int nelems = stop;
+int binarySearch( int * input, int st, int sp, int p){
+        register int j;
+        register int start  = st;
+        register int stop   = sp;
+        register int nelems = stop;
+        register int pivot  = p;
          do{
                 if(start  == stop-1){
 #ifdef BSEARCH_DEBUG
@@ -104,19 +107,22 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
          */
         int dataEndPoint;
         int dataTransferSize;
-        int recvdSize;
-        int i, j;
-        int origSize = *dataLengthPtr;
+        register int recvdSize;
+        register int i, j;
+        register int origSize = *dataLengthPtr;
         int localMedian;
 #ifdef DEBUG
         struct timeval sttime, sptime;
 #endif
 
-        int tempMedians[commSize];
 
         qsort((void *)(input), (size_t)(*dataLengthPtr), (size_t)(sizeof(int)), compare);
 
         do{
+                int tempMedians[commSize];
+                if(commSize == 1){
+                        return input;
+                }
                 origSize = *dataLengthPtr;
 
                 if(*dataLengthPtr <= 0){
@@ -127,31 +133,25 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                 //qsort((void *)(input), (size_t)(*dataLengthPtr), (size_t)(sizeof(int)), compare);
 
                 localMedian = input[(*dataLengthPtr)/2];
-                tempMedians[commRank] = localMedian;
-                MPI_Gather(&localMedian, 1, MPI_INT, tempMedians, 1, MPI_INT, 0, comm);
+                //tempMedians[commRank] = localMedian;
+                MPI_Allgather(&localMedian, 1, MPI_INT, tempMedians, 1, MPI_INT,  comm);
 #ifdef DEBUG
                 printf("[%d] Done with Gather\n", commRank);
 #endif
-                if(commRank == 0){
-                        pivot = median(tempMedians, commSize); 
+                pivot = median(tempMedians, commSize); 
 #ifdef DEBUG
-                        printf("Got the pivot in root : [%d]\n", pivot);
+                printf("Got the pivot in root : [%d]\n", pivot);
 #endif
-                }
 #ifdef DEBUG
                 printf("Sending the pivot to everyone\n");
 #endif
-                MPI_Bcast(&pivot, 1, MPI_INT, 0, comm);
+                //MPI_Bcast(&pivot, 1, MPI_INT, 0, comm);
 #ifdef DEBUG
                 printf("I have pivot : %d\n", pivot);
 #endif
 #ifdef DEBUG
                 printf("Sorting done \n");
 #endif
-                if(commSize == 1){
-                        return input;
-                }
-
 #ifdef DEBUG
                 gettimeofday(&sttime, 0x0);
 #endif
@@ -201,27 +201,29 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                         /*
                          * We need to merge here, we have the second half and the received second half in recvBuf
                          */
-                        dataTransferSize = i;
+                        register int size = *dataLengthPtr;
+                        register int tsize = i;
+                        //dataTransferSize = i;
                         i = 0;
                         j=0;
                         while(1){
-                                if(i>= *dataLengthPtr)
+                                if(i>= size)
                                         break;
                                 if(j>= recvdSize){
-                                        mergeBuf[i] = input[dataTransferSize];
-                                        dataTransferSize++;
+                                        mergeBuf[i] = input[tsize];
+                                        tsize++;
                                         i++;
                                         continue;
                                 }
-                                if(dataTransferSize >= origSize){
+                                if(tsize>= origSize){
                                         mergeBuf[i] = recvBuf[j];
                                         j++;
                                         i++;
                                         continue;
                                 }
-                                if(input[dataTransferSize] <= recvBuf[j]){
-                                        mergeBuf[i] = input[dataTransferSize];
-                                        dataTransferSize++;
+                                if(input[tsize] <= recvBuf[j]){
+                                        mergeBuf[i] = input[tsize];
+                                        tsize++;
                                         i++;
                                         continue;
                                 }
@@ -267,27 +269,29 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                          * We need to merge here, we have the first half and the received first half in recvBuf
                          */
                         origSize = i;
-                        dataTransferSize = 0;
+                        //dataTransferSize = 0;
+                        register int size = *dataLengthPtr;
+                        register int tsize = 0;
                         i = 0;
                         j=0;
                         while(1){
-                                if(i>= *dataLengthPtr)
+                                if(i>= size)
                                         break;
                                 if(j>= recvdSize){
-                                        mergeBuf[i] = input[dataTransferSize];
-                                        dataTransferSize++;
+                                        mergeBuf[i] = input[tsize];
+                                        tsize++;
                                         i++;
                                         continue;
                                 }
-                                if(dataTransferSize >= origSize){
+                                if(tsize>= origSize){
                                         mergeBuf[i] = recvBuf[j];
                                         j++;
                                         i++;
                                         continue;
                                 }
-                                if(input[dataTransferSize] <= recvBuf[j]){
-                                        mergeBuf[i] = input[dataTransferSize];
-                                        dataTransferSize++;
+                                if(input[tsize] <= recvBuf[j]){
+                                        mergeBuf[i] = input[tsize];
+                                        tsize++;
                                 }
                                 else{
                                         mergeBuf[i] = recvBuf[j];
@@ -302,20 +306,17 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                  * We should have been done with all the merging by now, so we block here for all the processes in 
                  * the comm, the first process in the comm does the split
                  */
-                int color = 0;
                 if(commRank >= commSize/2){
-                        color = 1;
+                        MPI_Comm_split(comm, 1, 1, &comm);
                 }
                 else{
-                        color = 0;
+                        MPI_Comm_split(comm, 0, 1, &comm);
                 }
-                //MPI_Barrier(comm);
+                MPI_Comm_size(comm, &commSize);
+                MPI_Comm_rank(comm, &commRank);
                 /*
                  * FIXME : Check if passing the same comm object twice can cause problems
                  */
-                MPI_Comm_split(comm, color, 1, &comm);
-                MPI_Comm_size(comm, &commSize);
-                MPI_Comm_rank(comm, &commRank);
 
                 //return mpiqsort_recur(mergeBuf, dataLengthPtr, comm, commRank, commSize, recvBuf, input);
                 int *temp;

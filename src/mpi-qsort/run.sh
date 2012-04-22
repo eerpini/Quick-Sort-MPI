@@ -10,4 +10,8 @@ else
         machine_file="mfile"
 fi
 make clean && make
-mpirun -n $1 -machinefile $machine_file ./run $2
+if [ $# -eq 3 ]; then
+        mpirun -n $1 -machinefile $machine_file ./run $2 $3
+else
+        mpirun -n $1 -machinefile $machine_file ./run $2
+fi

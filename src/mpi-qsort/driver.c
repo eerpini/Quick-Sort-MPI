@@ -56,11 +56,13 @@ int main(int argc, char **argv)
           sprintf(argv[2], "%d", time(NULL));
   }
 
+
   MPI_Init( &argc, &argv );
   MPI_Comm_rank( MPI_COMM_WORLD, &commRank );
   MPI_Comm_size( MPI_COMM_WORLD, &commSize );
 
   if (commRank == 0) {
+          printf("Seed is : %s\n", argv[2]);
           srand(atol(argv[2]));
         globalNumElements = atoi(argv[1]);
         if( !(globalInput = (int *)calloc(globalNumElements, sizeof(int))) )
