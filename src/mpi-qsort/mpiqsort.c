@@ -97,6 +97,7 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         int i, j;
         int origSize = *dataLengthPtr;
         int localMedian;
+        struct timeval sttime, sptime;
 
         int tempMedians[commSize];
         int _incr = 1;
@@ -136,6 +137,8 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         }
 
         i=0;
+
+        gettimeofday(&sttime, 0x0);
         
         do{
                 if(input[i] > pivot)
@@ -143,6 +146,8 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                 i++;
 
         }while(i < *dataLengthPtr );
+        gettimeofday(&sptime, 0x0);
+        printf("The time taken for serial lookup : %lld\n",timeval_diff(NULL, &sptime, &sttime)); 
       
         /*
         j = binarySearch(input, 0, *dataLengthPtr-1, pivot);
