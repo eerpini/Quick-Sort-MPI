@@ -56,6 +56,36 @@ int compare (const void *a, const void *b)
 	return (*(int *) a - *(int *) b);
 }
 
+/*
+ * Binary Search : array, start_index, num_elements, pivot
+ */
+int binarySearch( int * a, int start, int nelems, int pivot){
+
+        if(nelems == 1)
+                return start;
+        if(a[start + nelems/2-1] == pivot){
+                /*
+                 * FIXME : This is dangerous
+                 */
+                while(1){
+                        start++;
+                        printf("I\n");
+                        if(a[start + nelems/2-1] != pivot){
+                                return start+nelems/2;
+                        }
+                }
+        }
+
+        if(a[start + nelems/2-1] > pivot){
+                return binarySearch(a, start, nelems/2-1, pivot);
+        }
+        if(a[start + nelems/2-1] < pivot){
+                return binarySearch(a, start+nelems/2, nelems/2-1, pivot);
+        }
+
+
+}
+
 int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank, int commSize, int *recvBuf, int *mergeBuf) {
         int pivot;
         /*
@@ -77,64 +107,86 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
         localMedian = median(input, *dataLengthPtr);
         tempMedians[commRank] = localMedian;
 
-        MPI_Gather(&localMedian, 1, MPI_INT, tempMedians, commSize, MPI_INT, 0, comm);
+        MPI_Gather(&localMedian, 1, MPI_INT, tempMedians, 1, MPI_INT, 0, comm);
+#ifdef DEBUG
         printf("[%d] Done with Gather\n", commRank);
+#endif
 
         if(commRank == 0){
-                //pivot = median(tempMedians, commSize); 
-                pivot = input[0];
+                pivot = median(tempMedians, commSize); 
+#ifdef DEBUG
                 printf("Got the pivot in root : [%d]\n", pivot);
+#endif
         }
+#ifdef DEBUG
         printf("Sending the pivot to everyone\n");
+#endif
         MPI_Bcast(&pivot, 1, MPI_INT, 0, comm);
+#ifdef DEBUG
         printf("I have pivot : %d\n", pivot);
+#endif
 
 
         qsort((void *)(input), (size_t)(*dataLengthPtr), (size_t)(sizeof(int)), compare);
+#ifdef DEBUG
         printf("Sorting done \n");
+#endif
         if(commSize == 1){
                 return input;
         }
 
         i=0;
-        if(pivot > input[(*dataLengthPtr)/2]){
-                _incr = 1;
-                i = (*dataLengthPtr)/2 -1 ;
-        }
-        else{
-                _incr = -1;
-                i = (*dataLengthPtr)/2;
-        }
+        
         do{
-                if(_incr == 1){
-                        if(input[i] > pivot)
-                                break;
-                        i++;
+                if(input[i] > pivot)
+                        break;
+                i++;
+
+        }while(i < *dataLengthPtr );
+      
+        /*
+        j = binarySearch(input, 0, *dataLengthPtr-1, pivot);
+        if(i!=j){
+                printf("ERROR : Binary Search Failed , i[%d], binarySearch[%d] input[i] = [%d] input[j] = [%d]\n", i, j, input[i], input[j]);
+                printf("INFO : pivot : [%d] j: [%d] input[j-1] : [%d] input[j] : [%d] input[j+1] : [%d] length [%d]\n", pivot, j, input[j-1], input[j], input[j+1], *dataLengthPtr);
+                if(i< j){
+                        for(; i<= j; i++){
+                                printf("i[%d]= [%d]\n", i, input[i]);
+                        }
                 }
-                if(_incr == -1){
-                        if(input[i] <= pivot)
-                                break;
-                        i--;
+                else{
+                        for(; j<= i; j++){
+                                printf("j[%d]= [%d]\n", j, input[j]);
+                        }
                 }
-        }while(i < *dataLengthPtr && i >= 0);
+
+                exit(EXIT_FAILURE);
+        }
+        */
 
         if(i == *dataLengthPtr){
                 fprintf(stderr, "We could not locate the pivot in the sorted array, this should not happen\n");
         }
 
-        //*dataLengthPtr = (*dataLengthPtr - i);
-
+#ifdef DEBUG
         printf("Got the partitioning point\n");
+#endif
         if(commRank >= commSize/2){
                 /*
                  * We should be receiving first
                  */
                 dataEndPoint = (commRank + commSize/2)%commSize;
+#ifdef DEBUG
                 printf("Receiving the size[%d] from endpoint[%d]\n", dataTransferSize, dataEndPoint);
+#endif
                 MPI_Recv(&dataTransferSize, 1, MPI_INT, dataEndPoint, dataEndPoint, comm, NULL);
+#ifdef DEBUG
                 printf("The size I am about to recieve from endpoint [%d] is [%d]\n", dataEndPoint, dataTransferSize);
+#endif
                 if(dataTransferSize != 0){
+#ifdef DEBUG
                         printf("Now receiving the data from endpoint[%d]\n", dataEndPoint);
+#endif
                         MPI_Recv(recvBuf, dataTransferSize, MPI_INT, dataEndPoint, dataEndPoint, comm, NULL);
                 
                 }
@@ -194,10 +246,14 @@ int* mpiqsort_recur(int* input, int* dataLengthPtr, MPI_Comm comm, int commRank,
                 dataTransferSize = *dataLengthPtr - i;
                 //*dataLengthPtr = i;
                 dataEndPoint = (commRank + commSize/2)%commSize;
+#ifdef DEBUG
                 printf("Sending the size[%d] to endpoint[%d]\n", dataTransferSize, dataEndPoint);
+#endif
                 MPI_Send(&dataTransferSize, 1, MPI_INT, dataEndPoint, commRank, comm);
                 if(dataTransferSize != 0){
+#ifdef DEBUG
                         printf("Now sending the data to endpoint[%d]\n", dataEndPoint);
+#endif
                         MPI_Send((input + i), dataTransferSize, MPI_INT, dataEndPoint, commRank, comm);
                 }
                 *dataLengthPtr -= dataTransferSize;

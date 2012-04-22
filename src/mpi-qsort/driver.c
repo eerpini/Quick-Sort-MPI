@@ -1,5 +1,6 @@
 #include "header.h"
 
+
 void validate(int* output, int globalNumElements) {
   int i = 0;
   assert(output != NULL);
@@ -12,8 +13,7 @@ void validate(int* output, int globalNumElements) {
   printf("============= SORTED ===========\n");
 }
 
-long long
-timeval_diff(struct timeval *difference,
+long long timeval_diff(struct timeval *difference,
              struct timeval *end_time,
              struct timeval *start_time) {
   struct timeval temp_diff;
@@ -51,22 +51,23 @@ int main(int argc, char **argv)
   // time related
   long long diff;
   struct timeval starttime, endtime, timediff;
+  if(argc == 2){
+          argv[2] = (char *)malloc(21);
+          sprintf(argv[2], "%d", time(NULL));
+  }
 
   MPI_Init( &argc, &argv );
   MPI_Comm_rank( MPI_COMM_WORLD, &commRank );
   MPI_Comm_size( MPI_COMM_WORLD, &commSize );
 
   if (commRank == 0) {
-    //read input_size and input
-    if((fin = fopen("input.txt", "r")) == NULL)
-      {printf("Error opening input file\n"); exit(0);}
+          srand(atol(argv[2]));
+        globalNumElements = atoi(argv[1]);
+        if( !(globalInput = (int *)calloc(globalNumElements, sizeof(int))) )
+                {printf("Memory error\n"); exit(0);}
 
-    fscanf(fin, "%d", &globalNumElements);
-    if( !(globalInput = (int *)calloc(globalNumElements, sizeof(int))) )
-      {printf("Memory error\n"); exit(0);}
-
-    for(i = 0; i < globalNumElements || feof(fin); i++)
-      fscanf(fin, "%d", &globalInput[i]);
+        for(i = 0; i < globalNumElements ;i++)
+                globalInput[i] = rand()%1000000;
 
     if(i < globalNumElements)
       {printf("Invalid input\n"); exit(0);}
@@ -105,11 +106,8 @@ int main(int argc, char **argv)
       exit(0);
     }
     fprintf(fout, "%d\n", globalNumElements);
-    for (i = 0; i < dataLength; i++)
-      fprintf(fout, "%d\n", output[i]);
-    for (i = 0; i < globalNumElements - dataLength; i++)
-      fprintf(fout, "%d\n", globalInput[i]);
-    fclose (fout);
+    memcpy(output+dataLength, globalInput, (globalNumElements - dataLength)*sizeof(int));
+    validate(output, globalNumElements);
     diff = timeval_diff(&timediff,&endtime,&starttime);
     printf("Time to sort = %lld micro seconds\n", diff);
   }
