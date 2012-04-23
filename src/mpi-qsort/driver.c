@@ -1,16 +1,17 @@
 #include "header.h"
 
 
-void validate(int* output, int globalNumElements) {
+int validate(int* output, int globalNumElements) {
   int i = 0;
   assert(output != NULL);
   for(i = 0; i < globalNumElements - 1; i++) {
     if (output[i] > output[i+1]) {
       printf("************* NOT sorted *************\n");
-      return;
+      return 1;
     }
   }
   printf("============= SORTED ===========\n");
+  return 0;
 }
 
 long long int timeval_diff(struct timeval *difference,
@@ -109,7 +110,10 @@ int main(int argc, char **argv)
     }
     fprintf(fout, "%d\n", globalNumElements);
     memcpy(output+dataLength, globalInput, (globalNumElements - dataLength)*sizeof(int));
-    validate(output, globalNumElements);
+    if(validate(output, globalNumElements) != 0){
+            exit(EXIT_FAILURE);
+    }
+
     diff = timeval_diff(&timediff,&endtime,&starttime);
     printf("Time to sort = %lld micro seconds\n", diff);
   }

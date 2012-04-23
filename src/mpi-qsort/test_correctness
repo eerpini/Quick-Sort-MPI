@@ -1,0 +1,30 @@
+#!/bin/bash
+num_iter=10
+if [ $# -lt 4 ]; then
+        echo "Usage : test_correctness <num_iter> <num_threads> <num_elems log 2> <seed/0>"
+        exit 0
+fi
+num_iter=$1
+num_threads=$2
+num_elems=$3
+seed=$4
+if [ $seed -eq 0 ]; then
+        for i in `seq $num_iter`
+        do
+                ./run.sh $num_threads $num_elems
+                if [ $? -ne 0 ]; then
+                        echo "Correctness failed"
+                        exit 1
+                fi
+        done
+else
+        for i in `seq $num_iter`
+        do
+                ./run.sh $num_threads $num_elems $seed
+                if [ $? -ne 0 ]; then
+                        echo "Correctness failed"
+                        exit 1
+                fi
+        done
+fi
+
